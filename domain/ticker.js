@@ -70,6 +70,7 @@ class Ticker {
 	tick() {
 		for(let i = 0; i < this.subscriptions.length; i++) {
 			if (!this.canTick) {
+				// Ticker has been stopped. No reason to update
 				return;
 			} else {
 				let sub = this.subscriptions[i];

@@ -2,7 +2,6 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="1f40bb81-c2e1-46c2-8eae-46d56d5ba908" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/app.js" afterPath="$PROJECT_DIR$/app.js" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/domain/ticker.js" afterPath="$PROJECT_DIR$/domain/ticker.js" />
     </list>
     <ignored path="$PROJECT_DIR$/.tmp/" />
@@ -24,25 +23,33 @@
   </component>
   <component name="FileEditorManager">
     <leaf>
-      <file leaf-file-name="ticker.js" pinned="false" current-in-tab="false">
+      <file leaf-file-name="ticker.js" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/domain/ticker.js">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="205">
-              <caret line="128" column="40" lean-forward="false" selection-start-line="128" selection-start-column="40" selection-end-line="128" selection-end-column="40" />
+            <state relative-caret-position="315">
+              <caret line="72" column="55" lean-forward="false" selection-start-line="72" selection-start-column="55" selection-end-line="72" selection-end-column="55" />
               <folding>
-                <element signature="e#2127#3080#0" expanded="false" />
-                <element signature="e#2247#3066#0" expanded="false" />
-                <element signature="e#2305#2402#0" expanded="false" />
+                <element signature="n#QuoteSubscription#0" expanded="false" />
+                <element signature="n#!!block;n#constructor#0;n#Ticker#0" expanded="false" />
+                <element signature="n#!!doc;n#startTicker#0;n#Ticker#0" expanded="false" />
+                <element signature="n#!!block;n#startTicker#0;n#Ticker#0" expanded="false" />
+                <element signature="n#!!doc;n#stopTicker#0;n#Ticker#0" expanded="false" />
+                <element signature="n#!!block;n#stopTicker#0;n#Ticker#0" expanded="false" />
+                <element signature="n#!!doc;n#tick#0;n#Ticker#0" expanded="false" />
+                <element signature="n#!!doc;n#subscribe#0;n#Ticker#0" expanded="false" />
+                <element signature="e#2179#3132#0" expanded="false" />
+                <element signature="e#2299#3118#0" expanded="false" />
+                <element signature="e#2357#2454#0" expanded="false" />
               </folding>
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="app.js" pinned="false" current-in-tab="true">
+      <file leaf-file-name="app.js" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/app.js">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="511">
-              <caret line="82" column="5" lean-forward="true" selection-start-line="82" selection-start-column="5" selection-end-line="82" selection-end-column="5" />
+            <state relative-caret-position="646">
+              <caret line="91" column="3" lean-forward="true" selection-start-line="91" selection-start-column="3" selection-end-line="91" selection-end-column="3" />
               <folding />
             </state>
           </provider>
@@ -60,8 +67,8 @@
         <option value="$PROJECT_DIR$/routes/index.js" />
         <option value="$PROJECT_DIR$/views/index.pug" />
         <option value="$PROJECT_DIR$/public/javascripts/feed.js" />
-        <option value="$PROJECT_DIR$/domain/ticker.js" />
         <option value="$PROJECT_DIR$/app.js" />
+        <option value="$PROJECT_DIR$/domain/ticker.js" />
       </list>
     </option>
   </component>
@@ -206,12 +213,12 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1482002754001</updated>
-      <workItem from="1482002755702" duration="1236000" />
+      <workItem from="1482002755702" duration="1322000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="1236000" />
+    <option name="totallyTimeSpent" value="1322000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="1746" y="-77" width="1477" height="905" extended-state="0" />
@@ -298,23 +305,31 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/domain/ticker.js">
+    <entry file="file://$PROJECT_DIR$/app.js">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="205">
-          <caret line="128" column="40" lean-forward="false" selection-start-line="128" selection-start-column="40" selection-end-line="128" selection-end-column="40" />
-          <folding>
-            <element signature="e#2127#3080#0" expanded="false" />
-            <element signature="e#2247#3066#0" expanded="false" />
-            <element signature="e#2305#2402#0" expanded="false" />
-          </folding>
+        <state relative-caret-position="646">
+          <caret line="91" column="3" lean-forward="true" selection-start-line="91" selection-start-column="3" selection-end-line="91" selection-end-column="3" />
+          <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/app.js">
+    <entry file="file://$PROJECT_DIR$/domain/ticker.js">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="511">
-          <caret line="82" column="5" lean-forward="true" selection-start-line="82" selection-start-column="5" selection-end-line="82" selection-end-column="5" />
-          <folding />
+        <state relative-caret-position="315">
+          <caret line="72" column="55" lean-forward="false" selection-start-line="72" selection-start-column="55" selection-end-line="72" selection-end-column="55" />
+          <folding>
+            <element signature="n#QuoteSubscription#0" expanded="false" />
+            <element signature="n#!!block;n#constructor#0;n#Ticker#0" expanded="false" />
+            <element signature="n#!!doc;n#startTicker#0;n#Ticker#0" expanded="false" />
+            <element signature="n#!!block;n#startTicker#0;n#Ticker#0" expanded="false" />
+            <element signature="n#!!doc;n#stopTicker#0;n#Ticker#0" expanded="false" />
+            <element signature="n#!!block;n#stopTicker#0;n#Ticker#0" expanded="false" />
+            <element signature="n#!!doc;n#tick#0;n#Ticker#0" expanded="false" />
+            <element signature="n#!!doc;n#subscribe#0;n#Ticker#0" expanded="false" />
+            <element signature="e#2179#3132#0" expanded="false" />
+            <element signature="e#2299#3118#0" expanded="false" />
+            <element signature="e#2357#2454#0" expanded="false" />
+          </folding>
         </state>
       </provider>
     </entry>
