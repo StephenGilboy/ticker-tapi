@@ -72,13 +72,13 @@ io.on('connection', function (socket) {
   });
 
   socket.on('unsubscribe', function (symbol) {
-    ticker.unsubscribe(symbol, (err, symb) => {
-      if (err) {
-        socket.emit('error', {message: err});
-      } else if (symb) {
-        // Use the returned symbol. Its the correct room name than what the user sent.
+    ticker.unsubscribe(symbol).then((symb) => {
+      if (symb) {
         socket.leave(symb);
       }
+    }, (err) => {
+      console.log('Unsubscribe error: ' + err);
+      socket.emit('error', {message: err});
     });
   });
 });

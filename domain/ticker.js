@@ -90,14 +90,15 @@ class Ticker {
   /**
 	 * Adds a subscriber to a feed of quotes for given symbol/under
    * @param {string} symbol - Symbol of the security/stock.
-   * @param {function} next = (error, quote)
+   * @returns {Promise} Quote
    */
 	subscribe(symbol) {
 		return new Promise((resolve, reject) => {
       // Find existing subscription
       let self = this;
       this.findSubscription(symbol).then((subscription) => {
-        if (subscription && subscription.addSubscriber()) {
+        if (subscription && subscription.addSubscriber) {
+          subscription.addSubscriber();
           resolve(subscription.currentQuote);
         } else {
           // Get a quote from Google so we have real numbers to start with
@@ -110,9 +111,7 @@ class Ticker {
                 let subscription = new QuoteSubscription(quote);
                 console.log('Added subscriber');
                 self.subscriptions.push(subscription);
-                if (this.canTick === false) {
-                  this.startTicker();
-                }
+                self.startTicker();
                 resolve(quote);
               } catch (ex) {
                 reject(ex);
@@ -127,25 +126,27 @@ class Ticker {
   /**
 	 * Removes subscriber from quote subscription
    * @param {string} symbol - Symbol of security/stock
-   * @param {function} next - (err, null);
+   * @returns {Promise} Symbol if found.
    */
-	unsubscribe(symbol, next) {
-		// Find existing subscription
-		this.findSubscription(symbol).then((subscription) => {
-			if (subscription) {
-				subscription.removeSubscriber();
-				if (!subscription.hasSubscribers()) {
-					this.removeSubscription(subscription).then(() => {
-						if (this.subscriptions.length === 0) {
-							this.stopTicker();
-						}
-            next(null, subscription.symbol)
-					}, next);
-				}
-			} else {
-				next(null, null);
-			}
-		}, next);
+	unsubscribe(symbol) {
+		return new Promise((resolve, reject) => {
+      // Find existing subscription
+      this.findSubscription(symbol).then((subscription) => {
+        if (subscription && subscription.removeSubscriber) {
+          subscription.removeSubscriber();
+          if (!subscription.hasSubscribers()) {
+            this.removeSubscription(subscription).then(() => {
+              if (this.subscriptions.length === 0) {
+                this.stopTicker();
+              }
+              resolve(subscription.symbol);
+            }, reject);
+          }
+        } else {
+          resolve();
+        }
+      }, reject);
+		});
 	}
 
   /**
