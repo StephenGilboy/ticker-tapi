@@ -1,6 +1,7 @@
 const request = require('request');
 const eventHub = require('central-event');
 const Quote = require('./quote');
+const promiseTry = require('es6-promise-try');
 
 
 class QuoteSubscription {
@@ -34,8 +35,13 @@ class QuoteSubscription {
 
 class Ticker {
 
-	constructor(updateFrequency = 1000) {
+	constructor(externalQuoter, updateFrequency = 1000) {
+		if (!externalQuoter) {
+			throw new Error("An external quoter is required.");
+		}
+
 		this.subscriptions = [];
+		this.externalQuoter = externalQuoter;
 		// Don't let people abuse the update frequency. 1 second is enough.
 		this.updateFrequency = (updateFrequency > 1000) ? 1000 : updateFrequency;
 		this.intervalObj = null;
@@ -199,27 +205,7 @@ class Ticker {
    * @returns {Promise} resolves Quote if found, null if not found
    */
 	getQuote(symbol) {
-		return new Promise((resolve, reject) => {
-      let size = Math.ceil(Math.random() * 100);
-      request.get('http://finance.google.com/finance/info?client=ig&q=NASDAQ%3A' + symbol, (err, resp) => {
-        if (err) {
-          reject(err);
-        } else {
-          let quote = JSON.parse(resp.body.substr(3, resp.body.length));
-          if (quote.length) {
-          	try {
-              let bid = (quote[0].el_fix) ? parseFloat(quote[0].el_fix).toFixed(2) : parseFloat(quote[0].l_fix).toFixed(2);
-              let qt = new Quote(symbol, bid, size, parseFloat(quote[0].pcls_fix).toFixed(2), size - 1, parseFloat(quote[0].l_fix).toFixed(2));
-              resolve(qt);
-						} catch (ex) {
-          		reject(ex);
-						}
-					} else {
-          	resolve(null);
-					}
-        }
-      });
-		});
+		return promiseTry(() => this.externalQuoter.getQuote(symbol));
 	}
 
   /**
