@@ -7,6 +7,7 @@ socket.on('quote', function (d) {
 });
 
 socket.on('error', function (e) {
+	console.log("ERROR");
 	console.error(e);
 });
 

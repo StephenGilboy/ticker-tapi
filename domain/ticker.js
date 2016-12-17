@@ -19,10 +19,12 @@ class QuoteSubscription {
 
 	addSubscriber() {
 		this.numberOfSubscribers += 1;
+		return true;
 	}
 
 	removeSubscriber() {
 		this.numberOfSubscribers -= 1;
+		return true;
 	}
 
 	hasSubscribers() {
@@ -90,36 +92,36 @@ class Ticker {
    * @param {string} symbol - Symbol of the security/stock.
    * @param {function} next = (error, quote)
    */
-	subscribe(symbol, next) {
-		// Find existing subscription
-		let self = this;
-		this.findSubscription(symbol).then((subscription) => {
-			if (subscription) {
-				// Add the subscriber and return the current quote
-				subscription.addSubscriber();
-				next(null, subscription.currentQuote);
-			} else {
-				// Get a quote from Google so we have real numbers to start with
-				self.getQuote(symbol).then((quote) => {
-					if (!quote) {
-						next(new Error("No quote for " + symbol));
-					} else {
-            try {
-							// Add a new subscription
-              let subscription = new QuoteSubscription(quote);
-              console.log('Added subscriber');
-              self.subscriptions.push(subscription);
-              if (this.canTick === false) {
-              	this.startTicker();
-							}
-              next(null, quote);
-            } catch (ex) {
-              next(ex);
+	subscribe(symbol) {
+		return new Promise((resolve, reject) => {
+      // Find existing subscription
+      let self = this;
+      this.findSubscription(symbol).then((subscription) => {
+        if (subscription && subscription.addSubscriber()) {
+          resolve(subscription.currentQuote);
+        } else {
+          // Get a quote from Google so we have real numbers to start with
+          self.getQuote(symbol).then((quote) => {
+            if (!quote) {
+              reject(new Error("No quote for " + symbol));
+            } else {
+              try {
+                // Add a new subscription
+                let subscription = new QuoteSubscription(quote);
+                console.log('Added subscriber');
+                self.subscriptions.push(subscription);
+                if (this.canTick === false) {
+                  this.startTicker();
+                }
+                resolve(quote);
+              } catch (ex) {
+                reject(ex);
+              }
             }
-					}
-				}, next);
-			}
-		}, next);
+          }, reject);
+        }
+      }, reject);
+		});
 	}
 
   /**

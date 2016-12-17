@@ -62,16 +62,12 @@ app.use(function(err, req, res, next) {
 
 io.on('connection', function (socket) {
   socket.on('subscribe', function (symbol) {
-    ticker.subscribe(symbol, (err, quote) => {
-      if (err) {
-        console.log('Subscribe error: ' + err);
-        socket.emit('error', {message: err});
-      } else if(quote) {
+    ticker.subscribe(symbol).then((quote) => {
         // use the returned underlier/symbol for the room name for consistency.
         socket.join(quote.under);
-      } else {
-        socket.emit('error', {message: 'Invalid symbol.'});
-      }
+    }, (err) => {
+      console.log('Subscribe error: ' + err);
+      socket.emit('error', {message: err});
     });
   });
 
