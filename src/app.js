@@ -72,10 +72,12 @@ io.on('connection', function (socket) {
   });
 
   socket.on('unsubscribe', function (symbol) {
-    ticker.unsubscribe(symbol).then((symb) => {
-      if (symb) {
-        socket.leave(symb);
-      }
+    socket.leave(symbol);
+  });
+
+  socket.on('leave', function (room) {
+    ticker.unsubscribe(room).then((symb) => {
+      console.log('Subscriber left');
     }, (err) => {
       console.log('Unsubscribe error: ' + err);
       socket.emit('error', {message: err});

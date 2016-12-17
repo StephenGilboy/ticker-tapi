@@ -10,7 +10,7 @@ class QuoteSubscription {
 		}
 		this.currentQuote = currentQuote;
     this.symbol = currentQuote.under.toUpperCase();
-		this.numberOfSubscribers = 0;
+		this.numberOfSubscribers = 1;
 	}
 
 	equals(symbol) {
@@ -81,8 +81,11 @@ class Ticker {
 						sub.currentQuote = quote;
 						eventHub.emit('tick', quote);
 					}, (err) => {
+						console.log('Err');
 						eventHub.emit('error', err);
 					});
+				} else {
+					console.log('No Subscribers');
 				}
 			}
 		}
@@ -137,6 +140,7 @@ class Ticker {
           subscription.removeSubscriber();
           if (!subscription.hasSubscribers()) {
             this.removeSubscription(subscription).then(() => {
+            	console.log('Removed subscriber');
               if (this.subscriptions.length === 0) {
                 this.stopTicker();
               }

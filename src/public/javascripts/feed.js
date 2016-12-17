@@ -1,7 +1,7 @@
 var socket = io.connect('http://localhost:3000');
 
 
-socket.on('quote', function (d) {
+socket.on('tick', function (d) {
 	console.log("QUOTE");
 	console.log(d);
 });
@@ -17,4 +17,4 @@ socket.emit('subscribe', 'MSFT');
 setTimeout(function () {
 	socket.emit('unsubscribe', 'GOOG');
   socket.emit('unsubscribe', 'MSFT');
-}, 600000);
+}, 6000);
