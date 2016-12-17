@@ -67,9 +67,8 @@ class Ticker {
    */
 	tick() {
 		for(let i = 0; i < this.subscriptions.length; i++) {
-			console.log('Tick');
 			if (!this.canTick) {
-				break;
+				return;
 			} else {
 				let sub = this.subscriptions[i];
 				// Only update when there are subscribers.
