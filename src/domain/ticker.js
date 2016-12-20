@@ -200,7 +200,7 @@ class Ticker {
 			} else if (!quote.isValid){
 				reject(new Error("Supplied quote is invalid."));
 			} else {
-        let rand = Math.random() * 100,
+        let rand = Math.ceil(Math.random() * 10),
             moveUp = (rand % 2) === 0,
             size = Math.ceil(Math.random() * 100),
             point = Math.random(),
