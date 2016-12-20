@@ -15,15 +15,27 @@ describe('Google Quoter', () => {
     expect(quoter.endpoint).to.equal('http://finance.google.com/finance/info?client=ig&q=NASDAQ%3A');
   });
 
-  it('should return a Quote given a valid symbol', (done) => {
+  it('should return a Quote given a valid symbol', () => {
     let symbol = 'GOOG';
-    expect(quoter.getQuote(symbol)).to.eventually.have.property('isValid').that.is.true.and.notify(done);
+    return quoter.getQuote(symbol).then((quote) => {
+      expect(quote.isValid).to.be.true;
+    });
   });
 
-  it('should return null given an invalid symbol', (done) => {
+  it('should reject given an invalid symbol', () => {
+    let symbol = 'XEOW';
+    return quoter.getQuote(symbol).then((quote) => {
+    }, (err) => {
+      expect(err).to.not.be.null;
+    });
+  });
+
+  it('should reject given an empty string argument', () => {
     let symbol = '';
-    expect(quoter.getQuote(symbol)).to.eventually.be.null.and.notify(done);
-    done();
+    return quoter.getQuote(symbol).then((quote) => {
+    }, (err) => {
+      expect(err).to.not.be.null;
+    });
   });
 
 });

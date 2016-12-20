@@ -6,11 +6,11 @@ const promiseTry = require('es6-promise-try');
 
 class QuoteSubscription {
 	constructor(currentQuote) {
-    if (!currentQuote || !currentQuote.isValid()) {
+    if (!currentQuote || !currentQuote.isValid) {
 			throw new Error("Argument 'currentQuote' is null or invalid.");
 		}
 		this.currentQuote = currentQuote;
-    this.symbol = currentQuote.under.toUpperCase();
+    this.symbol = currentQuote.symbol.toUpperCase();
 		this.numberOfSubscribers = 1;
 	}
 
@@ -103,6 +103,23 @@ class Ticker {
    * @returns {Promise} Quote
    */
 	subscribe(symbol) {
+		return promiseTry(() => {
+			return this.findSubscription(symbol).then((subscription) => {
+				if (subscription) {
+				  subscription.addSubscriber();
+				} else {
+					return this.getQuote(symbol).then((quote) => {
+            subscription = new QuoteSubscription(quote);
+            this.subscriptions.push(subscription);
+            return quote;
+					}, (err) => {
+					  throw new Error("Invalid Stock Symbol.");
+          });
+				}
+			});
+		});
+
+		/*
 		return new Promise((resolve, reject) => {
       // Find existing subscription
       let self = this;
@@ -131,6 +148,7 @@ class Ticker {
         }
       }, reject);
 		});
+		*/
 	}
 
   /**
@@ -139,25 +157,21 @@ class Ticker {
    * @returns {Promise} Symbol if found.
    */
 	unsubscribe(symbol) {
-		return new Promise((resolve, reject) => {
-      // Find existing subscription
-      this.findSubscription(symbol).then((subscription) => {
-        if (subscription && subscription.removeSubscriber) {
-          subscription.removeSubscriber();
-          if (!subscription.hasSubscribers()) {
-            this.removeSubscription(subscription).then(() => {
-            	console.log('Removed subscriber');
-              if (this.subscriptions.length === 0) {
-                this.stopTicker();
+
+	  return promiseTry(() => {
+	    return this.findSubscription(symbol).then((subscription) => {
+	      if (subscription) {
+	        subscription.removeSubscriber();
+	        if (!subscription.hasSubscribers()) {
+	          this.removeSubscription(subscription).then(() => {
+	            if (this.subscriptions.length === 0) {
+	              this.stopTicker();
               }
-              resolve(subscription.symbol);
-            }, reject);
+            });
           }
-        } else {
-          resolve();
         }
-      }, reject);
-		});
+      });
+    });
 	}
 
   /**
@@ -167,15 +181,11 @@ class Ticker {
    */
 	findSubscription(symbol) {
 		return new Promise((resolve, reject) => {
-			try {
-        let sub = this.subscriptions.filter(s => s.equals(symbol));
-        if (sub.length) {
-        	resolve(sub);
-				} else {
-        	resolve(null);
-				}
-			} catch (e) {
-				reject(e);
+      let sub = this.subscriptions.filter(s => s.equals(symbol));
+      if (sub.length) {
+      	resolve(sub[0]);
+			} else {
+      	resolve(null);
 			}
 		});
 	}
@@ -189,7 +199,7 @@ class Ticker {
 		return new Promise((resolve, reject) => {
 			try {
         let subIndex = this.subscriptions.indexOf(subscription);
-        if (subIndex) {
+        if (subIndex >= 0) {
         	this.subscriptions.splice(subIndex, 1);
 				}
 				resolve();
