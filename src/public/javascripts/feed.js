@@ -17,4 +17,12 @@ socket.emit('subscribe', 'MSFT');
 setTimeout(function () {
 	socket.emit('unsubscribe', 'GOOG');
   socket.emit('unsubscribe', 'MSFT');
-}, 6000);
+
+  setTimeout(function () {
+		socket.emit('subscribe', 'GOOG');
+
+		setTimeout(function () {
+			socket.emit('unsubscribe', 'GOOG');
+    }, 2000);
+  }, 1000);
+}, 5000);

@@ -7,13 +7,14 @@ var bodyParser = require('body-parser');
 var socket_io = require('socket.io');
 var routes = require('./routes/index');
 const Ticker = require('./domain/ticker');
+const Quoter = require('./infrastructure/externalQuoters').Google;
 const eventHub = require('central-event');
 
 var app = express();
 var io = socket_io();
 app.io = io;
 
-const ticker = new Ticker();
+const ticker = new Ticker(new Quoter());
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -61,32 +62,33 @@ app.use(function(err, req, res, next) {
 });
 
 io.on('connection', function (socket) {
+
   socket.on('subscribe', function (symbol) {
     ticker.subscribe(symbol).then((quote) => {
         // use the returned underlier/symbol for the room name for consistency.
-        socket.join(quote.under);
-    }, (err) => {
+        socket.join(quote.symbol);
+    }).catch((err) => {
       console.log('Subscribe error: ' + err);
       socket.emit('error', {message: err});
     });
   });
 
   socket.on('unsubscribe', function (symbol) {
-    socket.leave(symbol);
-  });
-
-  socket.on('leave', function (room) {
-    ticker.unsubscribe(room).then((symb) => {
-      console.log('Subscriber left');
-    }, (err) => {
-      console.log('Unsubscribe error: ' + err);
-      socket.emit('error', {message: err});
-    });
+    if (typeof symbol === 'string') {
+      socket.leave(symbol.toUpperCase());
+      eventHub.emit('leave', symbol.toUpperCase());
+    }
   });
 });
 
 eventHub.on('tick', (quote) => {
-  io.to(quote.symbol).emit('tick', quote);
+  io.emit('tick', quote);
+});
+
+eventHub.on('leave', (symbol) => {
+  ticker.unsubscribe(symbol).catch((err) => {
+    console.error(err);
+  });
 });
 
 eventHub.on('error', (err) => {

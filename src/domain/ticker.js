@@ -111,6 +111,7 @@ class Ticker {
 					return this.getQuote(symbol).then((quote) => {
             subscription = new QuoteSubscription(quote);
             this.subscriptions.push(subscription);
+            this.startTicker();
             return quote;
 					}, (err) => {
 					  throw new Error("Invalid Stock Symbol.");
@@ -118,37 +119,6 @@ class Ticker {
 				}
 			});
 		});
-
-		/*
-		return new Promise((resolve, reject) => {
-      // Find existing subscription
-      let self = this;
-      this.findSubscription(symbol).then((subscription) => {
-        if (subscription && subscription.addSubscriber) {
-          subscription.addSubscriber();
-          resolve(subscription.currentQuote);
-        } else {
-          // Get a quote from Google so we have real numbers to start with
-          self.getQuote(symbol).then((quote) => {
-            if (!quote) {
-              reject(new Error("No quote for " + symbol));
-            } else {
-              try {
-                // Add a new subscription
-                let subscription = new QuoteSubscription(quote);
-                console.log('Added subscriber');
-                self.subscriptions.push(subscription);
-                self.startTicker();
-                resolve(quote);
-              } catch (ex) {
-                reject(ex);
-              }
-            }
-          }, reject);
-        }
-      }, reject);
-		});
-		*/
 	}
 
   /**
@@ -227,7 +197,7 @@ class Ticker {
 		return new Promise((resolve, reject) => {
 			if (!quote) {
 				reject(new Error("Argument 'quote' is null or undefined."));
-			} else if (!quote.isValid()){
+			} else if (!quote.isValid){
 				reject(new Error("Supplied quote is invalid."));
 			} else {
         let rand = Math.random() * 100,
@@ -235,8 +205,8 @@ class Ticker {
             size = Math.ceil(Math.random() * 100),
             point = Math.random(),
             qte = (moveUp) ?
-                new Quote(quote.under, (quote.bid + point).toFixed(2), size, (quote.ask + point + 0.05).toFixed(2), size - 1, quote.ask) :
-                new Quote(quote.under, (quote.bid - point).toFixed(2), size, (quote.ask - point + 0.05).toFixed(2), size - 1, quote.bid);
+                new Quote(quote.symbol, (quote.bid + point).toFixed(2), size, (quote.ask + point + 0.05).toFixed(2), size - 1, quote.ask) :
+                new Quote(quote.symbol, (quote.bid - point).toFixed(2), size, (quote.ask - point + 0.05).toFixed(2), size - 1, quote.bid);
         resolve(qte);
 			}
 		});
