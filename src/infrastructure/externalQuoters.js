@@ -14,9 +14,15 @@ class GoogleQuoter {
     }).then((body) => {
       let quote = JSON.parse(body.substr(3, body.length));
       if (quote.length) {
-        let bid = (quote[0].el_fix) ? parseFloat(quote[0].el_fix).toFixed(2) : parseFloat(quote[0].l_fix).toFixed(2);
+        let bid = (quote[0].el_fix) ? parseFloat(quote[0].el_fix) : parseFloat(quote[0].l_fix);
+        let ask = parseFloat(quote[0].pcls_fix);
+        if (bid > ask) {
+          let tmp = bid;
+          bid = ask;
+          ask = tmp;
+        }
         let size = Math.ceil(Math.random() * 100);
-        let qt = new Quote(symbol, bid, size, parseFloat(quote[0].pcls_fix).toFixed(2), size - 1, parseFloat(quote[0].l_fix).toFixed(2));
+        let qt = new Quote(symbol, bid.toFixed(2), size, ask.toFixed(2), size - 1, parseFloat(quote[0].l_fix).toFixed(2));
         return qt;
       } else {
         return null;

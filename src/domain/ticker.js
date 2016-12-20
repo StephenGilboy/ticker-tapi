@@ -203,11 +203,12 @@ class Ticker {
         let rand = Math.ceil(Math.random() * 10),
             moveUp = (rand % 2) === 0,
             size = Math.ceil(Math.random() * 100),
-            point = Math.random(),
-            qte = (moveUp) ?
-                new Quote(quote.symbol, (quote.bid + point).toFixed(2), size, (quote.ask + point + 0.05).toFixed(2), size - 1, quote.ask) :
-                new Quote(quote.symbol, (quote.bid - point).toFixed(2), size, (quote.ask - point + 0.05).toFixed(2), size - 1, quote.bid);
-        resolve(qte);
+            point = Math.random();
+        if (moveUp) {
+          resolve(new Quote(quote.symbol, (parseFloat(quote.bid) + point).toFixed(2), size, (parseFloat(quote.ask) + point + 0.05).toFixed(2), size - 1, quote.ask));
+        } else {
+         resolve(new Quote(quote.symbol, (parseFloat(quote.bid) - point).toFixed(2), size, (parseFloat(quote.ask) - point + 0.05).toFixed(2), size - 1, quote.bid));
+        }
 			}
 		});
   }
