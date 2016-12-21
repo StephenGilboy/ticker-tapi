@@ -64,35 +64,23 @@ app.use(function(err, req, res, next) {
 io.on('connection', function (socket) {
 
   socket.on('subscribe', function (symbol) {
-    ticker.subscribe(symbol).then((quote) => {
-        // use the returned underlier/symbol for the room name for consistency.
-        socket.join(quote.symbol);
-    }).catch((err) => {
-      console.log('Subscribe error: ' + err);
-      socket.emit('error', {message: err});
-    });
+
+    let cb = (quote) => {
+      socket.emit('tick', quote);
+    };
+
+    ticker.subscribe(socket.id, symbol, cb);
   });
 
   socket.on('unsubscribe', function (symbol) {
     if (typeof symbol === 'string') {
-      socket.leave(symbol.toUpperCase());
-      eventHub.emit('leave', symbol.toUpperCase());
+      ticker.unsubscribe(socket.id, symbol);
     }
   });
-});
 
-eventHub.on('tick', (quote) => {
-  io.emit('tick', quote);
-});
-
-eventHub.on('leave', (symbol) => {
-  ticker.unsubscribe(symbol).catch((err) => {
-    console.error(err);
+  socket.on('disconnect', function () {
+    ticker.unsubscribeAll(socket.id);
   });
-});
-
-eventHub.on('error', (err) => {
-  console.error(err);
 });
 
 module.exports = app;

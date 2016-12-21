@@ -43,17 +43,187 @@ describe('Ticker', () => {
     });
   });
 
-  describe('#findSubscription', () => {
+  describe('#addObservable', () => {
 
-    it('should resolve with a subscription when one exists with the given symbol', () => {
+    let stub = sinon.stub();
+    let symbol = 'GOOG';
+    let quoter = { getQuote: stub };
+    let ticker = null;
+    let quote = new Quote(symbol, 10.00, 1, 12.00, 1, 11.00);
+
+    beforeEach(() => {
+      ticker = new Ticker(quoter);
+    });
+
+    it('should resolve with an observable given a valid quote', () => {
+      return ticker.addObservable(quote).then((obs) => {
+        expect(obs).to.not.be.null;
+      });
+    });
+
+    it('should resolve with an observable if one exists with given a valid quote', () => {
+      return ticker.addObservable(quote).then(() => {
+        return ticker.addObservable(quote).then((obs) => {
+          expect(obs).to.not.be.null;
+        });
+      });
+    });
+
+    it('should reject if given quote if null', () => {
+      return ticker.addObservable(null).catch((ex) => {
+        expect(ex).to.not.be.null;
+      });
+    });
+
+  });
+
+  describe('#findObservable', () => {
+    let stub = sinon.stub();
+    let symbol = 'GOOG';
+    let quoter = { getQuote: stub };
+    let ticker = new Ticker(quoter);
+    let obj = { id: 1 };
+    ticker.observables.set(symbol, obj);
+
+    it('should resolve with an observable when one exists with the given symbol', () => {
+
+      return ticker.findObservable(symbol).then((result) => {
+        expect(result.id).to.equal(obj.id);
+      });
 
     });
 
-    it('should reject if a subscription does not exist with the given symbol.', () => {
+    it('should resolve with undefined if an observable is not found for the given symbol', () => {
+      return ticker.findObservable('MSFT').then((result) => {
+        expect(result).to.be.undefined;
+      });
+    });
 
-    })
+    it('should reject if the given symbol is invalid.', () => {
+      return ticker.findObservable('').catch((ex) => {
+        expect(ex).to.not.be.null;
+      });
+    });
 
   });
+
+  describe('#addSubscriber', () => {
+    let stub = sinon.stub();
+    let quoter = { getQuote: stub };
+    let ticker = null;
+    let subscriberId = 'SUB1';
+
+    beforeEach(() => {
+      ticker = new Ticker(quoter);
+    });
+
+    it('should add a subscriber with the given id', () => {
+      return ticker.addSubscriber(subscriberId).then((map) => {
+        expect(ticker.subscribers.has(subscriberId));
+      });
+    });
+
+    it('should resolve with a map', () => {
+      return ticker.addSubscriber(subscriberId).then((map) => {
+        map.set('hi', 'world');
+        expect(map.get('hi')).to.equal('world');
+      });
+    });
+
+    it('should resolve with a map if the subscriber already exists', () => {
+      return ticker.addSubscriber(subscriberId).then(() => {
+        return ticker.addSubscriber(subscriberId).then((map) => {
+          expect(map).to.not.be.null;
+        });
+      });
+    });
+
+    it('should reject if subscriberid is null', () => {
+      return ticker.addSubscriber(null).catch((ex) => {
+        expect(ex).to.not.be.null;
+      });
+    });
+
+  });
+
+  describe('#findSubscriber', () => {
+    let stub = sinon.stub();
+    let quoter = { getQuote: stub };
+    let ticker = new Ticker(quoter);
+    let subscriberId = 'SUB1';
+    let arr = [{id: 1}];
+    ticker.subscribers.set(subscriberId, arr);
+
+    it('should resolve with a result when a subscriber exists with given subscriberId', () => {
+
+      return ticker.findSubscriber(subscriberId).then((result) => {
+        expect(result[0].id).to.equal(arr[0].id);
+      });
+
+    });
+
+    it('should resolve with undefined a subscriber is not found given symbol', () => {
+      return ticker.findSubscriber('NOTHERE').then((result) => {
+        expect(result).to.be.undefined;
+      });
+    });
+
+    it('should reject if the given symbol is null.', () => {
+      return ticker.findSubscriber(null).catch((ex) => {
+        expect(ex).to.not.be.null;
+      });
+    });
+
+    it('should reject if the given symbol is an empty string.', () => {
+      return ticker.findSubscriber('').catch((ex) => {
+        expect(ex).to.not.be.null;
+      });
+    });
+
+  });
+
+  describe('#findSubscription', () => {
+    let stub = sinon.stub();
+    let quoter = { getQuote: stub };
+    let ticker = new Ticker(quoter);
+    let subscriptions = new Map();
+    subscriptions.set('KEY', { id: 'value' });
+
+    it('should resolve with a result when a subscription exists with given key', () => {
+
+      return ticker.findSubscription(subscriptions, 'KEY').then((result) => {
+        expect(result.id).to.equal('value');
+      });
+
+    });
+
+    it('should resolve with undefined a subscriber is not found given symbol', () => {
+      return ticker.findSubscription(subscriptions, 'NOTHERE').then((result) => {
+        expect(result).to.be.undefined;
+      });
+    });
+
+    it('should reject if the given subscriptions is null', () => {
+      return ticker.findSubscription(null, 'KEY').catch((ex) => {
+        expect(ex).to.not.be.null;
+      });
+    })
+
+    it('should reject if the given symbol is null.', () => {
+      return ticker.findSubscription(subscriptions, null).catch((ex) => {
+        expect(ex).to.not.be.null;
+      });
+    });
+
+    it('should reject if the given symbol is an empty string.', () => {
+      return ticker.findSubscription(subscriptions, '').catch((ex) => {
+        expect(ex).to.not.be.null;
+      });
+    });
+
+  });
+
+  /*
 
   describe('#subscribe', () => {
 
@@ -71,48 +241,6 @@ describe('Ticker', () => {
       it('should create a new subscription when symbol has not been subscribed to', () => {
         return ticker.subscribe(symbol).then(() => {
           expect(ticker.subscriptions.length).to.equal(1);
-        });
-      });
-
-      it('should create a subscription with a single subscriber', () => {
-        return ticker.subscribe(symbol).then(() => {
-          if (ticker.subscriptions.length) {
-            expect(ticker.subscriptions[0].numberOfSubscribers).to.equal(1);
-          } else {
-            chai.fail();
-          }
-        });
-      });
-
-      it('should create a subscription with the symbol given.', () => {
-        return ticker.subscribe(symbol).then(() => {
-          if (ticker.subscriptions.length) {
-            expect(ticker.subscriptions[0].symbol).to.equal(symbol);
-          } else {
-            chai.fail();
-          }
-        });
-      });
-
-      it('should create a subscription that has subscribers.', () => {
-        return ticker.subscribe(symbol).then(() => {
-          if (ticker.subscriptions.length) {
-            expect(ticker.subscriptions[0].hasSubscribers()).to.be.true;
-          } else {
-            chai.fail();
-          }
-        });
-      });
-
-      it('should increment the number of subscribers when a subscription for the given symbol exists', () => {
-        return ticker.subscribe(symbol).then(() => {
-          return ticker.subscribe(symbol).then(() => {
-            if (ticker.subscriptions.length) {
-              expect(ticker.subscriptions[0].numberOfSubscribers).to.equal(2);
-            } else {
-              chai.fail();
-            }
-          });
         });
       });
 
@@ -165,6 +293,7 @@ describe('Ticker', () => {
       });
     });
 
-  })
+  });
+  */
 });
 

@@ -2,36 +2,7 @@ const request = require('request');
 const eventHub = require('central-event');
 const Quote = require('./quote');
 const promiseTry = require('es6-promise-try');
-
-
-class QuoteSubscription {
-	constructor(currentQuote) {
-    if (!currentQuote || !currentQuote.isValid) {
-			throw new Error("Argument 'currentQuote' is null or invalid.");
-		}
-		this.currentQuote = currentQuote;
-    this.symbol = currentQuote.symbol.toUpperCase();
-		this.numberOfSubscribers = 1;
-	}
-
-	equals(symbol) {
-		return (symbol && typeof symbol === 'string' && symbol.toUpperCase() === this.symbol);
-	}
-
-	addSubscriber() {
-		this.numberOfSubscribers += 1;
-		return true;
-	}
-
-	removeSubscriber() {
-		this.numberOfSubscribers -= 1;
-		return true;
-	}
-
-	hasSubscribers() {
-		return this.numberOfSubscribers > 0;
-	}
-}
+const Rx = require('rxjs');
 
 class Ticker {
 
@@ -40,82 +11,55 @@ class Ticker {
 			throw new Error("An external quoter is required.");
 		}
 
-		this.subscriptions = [];
+		this.observables = new Map();
+		this.subscribers = new Map();
 		this.externalQuoter = externalQuoter;
 		// Don't let people abuse the update frequency. 1 second is enough.
 		this.updateFrequency = (updateFrequency > 1000) ? 1000 : updateFrequency;
-		this.intervalObj = null;
-		this.canTick = false;
 	}
 
-  /**
-	 * Starts the ticker
-   */
-	startTicker() {
-		if (this.canTick) return;
-
-		this.canTick = true;
-		this.intervalObj = setInterval(() => {
-			this.tick();
-		}, this.updateFrequency);
-	}
-
-  /**
-	 * Stops the ticker
-   */
-	stopTicker() {
-		this.canTick = false;
-		if (this.intervalObj) {
-			clearInterval(this.intervalObj);
-		}
-	}
-
-  /**
-	 * Updates quotes and emits 'tick' event on update.
-   */
-	tick() {
-		for(let i = 0; i < this.subscriptions.length; i++) {
-			if (!this.canTick) {
-				// Ticker has been stopped. No reason to update
-				return;
-			} else {
-				let sub = this.subscriptions[i];
-				// Only update when there are subscribers.
-				// Let unsubscribe deal with cleanup
-				if (sub.hasSubscribers()) {
-					this.getUpdate(sub.currentQuote).then((quote) => {
-						sub.currentQuote = quote;
-						eventHub.emit('tick', quote);
-					}, (err) => {
-						console.log('Err');
-						eventHub.emit('error', err);
-					});
-				} else {
-					console.log('No Subscribers');
-				}
-			}
-		}
-	}
 
   /**
 	 * Adds a subscriber to a feed of quotes for given symbol/under
    * @param {string} symbol - Symbol of the security/stock.
    * @returns {Promise} Quote
    */
-	subscribe(symbol) {
+	subscribe (subscriberId, symbol, callback) {
 		return promiseTry(() => {
-			return this.findSubscription(symbol).then((subscription) => {
-				if (subscription) {
-				  subscription.addSubscriber();
+			return this.findSubscriber(subscriberId).then((subscriptions) => {
+				if (subscriptions) {
+					// Check if subscribed to symbol
+					return this.findSubscription(subscriptions, symbol).then((subscription) => {
+						if (subscription) {
+							return;
+						} else {
+							return this.findObservable(symbol).then((observable) => {
+								if (observable) {
+									// Add new subscription
+									let newSub = observable.subscribe(callback);
+                  subscriptions.set(symbol, newSub);
+								} else {
+									return this.getQuote(symbol).then((quote) => {
+										return this.addObservable(quote).then((observable) => {
+                      // Add new subscription
+                      let newSub = observable.subscribe(callback);
+                      subscriptions.set(symbol, newSub);
+										});
+									});
+								}
+							});
+						}
+					});
 				} else {
+					// NO Subscriber
 					return this.getQuote(symbol).then((quote) => {
-            subscription = new QuoteSubscription(quote);
-            this.subscriptions.push(subscription);
-            this.startTicker();
-            return quote;
-					}, (err) => {
-					  throw new Error("Invalid Stock Symbol.");
-          });
+						this.addObservable(quote).then((observable) => {
+							this.addSubscriber(subscriberId).then((subscriptions) => {
+                let newSub = observable.subscribe(callback);
+                subscriptions.set(symbol, newSub);
+							})
+						})
+					})
 				}
 			});
 		});
@@ -126,55 +70,108 @@ class Ticker {
    * @param {string} symbol - Symbol of security/stock
    * @returns {Promise} Symbol if found.
    */
-	unsubscribe(symbol) {
-
+	unsubscribe(subscriberId, symbol) {
 	  return promiseTry(() => {
-	    return this.findSubscription(symbol).then((subscription) => {
-	      if (subscription) {
-	        subscription.removeSubscriber();
-	        if (!subscription.hasSubscribers()) {
-	          this.removeSubscription(subscription).then(() => {
-	            if (this.subscriptions.length === 0) {
-	              this.stopTicker();
-              }
-            });
-          }
-        }
-      });
+	    return this.findSubscriber(subscriberId).then((subscriptions) => {
+	    	if (subscriptions) {
+          return this.findSubscription(subscriptions, symbol).then((sub) => {
+          	if (sub) {
+          		sub.unsubscribe();
+          		subscriptions.delete(symbol);
+						}
+          })	;
+				}
+			})
     });
 	}
 
-  /**
-	 * Finds a subscription in the subscribers for the given symbol
-   * @param {string} symbol - Symbol of the security/stock
-   * @returns {Promise} resolves a subscription if found. Null if none exists.
-   */
-	findSubscription(symbol) {
+	unsubscribeAll(subscriberId) {
+		return promiseTry(() => {
+			return this.findSubscriber(subscriberId).then((subscriptions) => {
+				if (subscriptions) {
+					subscriptions.forEach((sub) => {
+						if (sub) {
+              sub.unsubscribe();
+						}
+					});
+					subscriptions.clear();
+					this.subscribers.delete(subscriberId);
+				}
+			});
+		});
+	}
+
+	addObservable (quote) {
+		let self = this;
 		return new Promise((resolve, reject) => {
-      let sub = this.subscriptions.filter(s => s.equals(symbol));
-      if (sub.length) {
-      	resolve(sub[0]);
+			if (quote === null || quote === undefined || quote.isValid === false) {
+				reject(new Error('Argument "quote" is invalid.'));
 			} else {
-      	resolve(null);
+				if (this.observables.has(quote.symbol)) {
+					resolve(this.observables.get(quote.symbol));
+				} else {
+					let obsv = Rx.Observable.create(observable => {
+						let lastQt = quote;
+						setInterval(() => {
+							self.getUpdate(lastQt).then((qt) => {
+								lastQt = qt;
+								observable.next(lastQt);
+							});
+						}, 800);
+					});
+					this.observables.set(quote.symbol, obsv);
+					resolve(obsv);
+				}
 			}
 		});
 	}
 
-  /**
-	 * Removes subscription from subscribers if it is in the array
-   * @param {QuoteSubscription} subscription
-   * @returns {Promise} Resolves either way
-   */
-	removeSubscription(subscription) {
+	findObservable (symbol) {
 		return new Promise((resolve, reject) => {
-			try {
-        let subIndex = this.subscriptions.indexOf(subscription);
-        if (subIndex >= 0) {
-        	this.subscriptions.splice(subIndex, 1);
+			if (typeof symbol !== 'string' || symbol.length === 0) {
+				reject(new Error('Argument "symbol" is invalid.'));
+			} else {
+				resolve(this.observables.get(symbol.toUpperCase()));
+			}
+		});
+	}
+
+	addSubscriber (subscriberId) {
+		return new Promise((resolve, reject) => {
+			if (subscriberId === null || subscriberId === undefined) {
+				reject(new Error('Argument "subscriberId" is invalid'));
+			} else {
+				if (this.subscribers.has(subscriberId)) {
+					resolve(this.subscribers.get(subscriberId));
+				} else {
+					let map = new Map();
+					this.subscribers.set(subscriberId, map);
+					resolve(map);
 				}
-				resolve();
-			} catch (ex) {
-        	reject(ex);
+			}
+		});
+	}
+
+	findSubscriber (subscriberId) {
+		return new Promise((resolve, reject) => {
+			if (subscriberId === null || subscriberId === undefined) {
+				reject(new Error('Argument "subscriberId" is invalid.'));
+			} else if (typeof subscriberId !== 'string' || typeof subscriberId === 'string' && subscriberId.length === 0) {
+        reject(new Error('Argument "subscriberId" is invalid.'));
+			}else {
+				resolve(this.subscribers.get(subscriberId));
+			}
+		});
+	}
+
+	findSubscription (subscriptions, symbol) {
+		return new Promise((resolve, reject) => {
+			if (null === subscriptions || undefined === subscriptions) {
+				reject(new Error('Argument "subscriptions" is invalid.'));
+			} else if (typeof symbol !== 'string' || typeof symbol === 'string' && symbol.length === 0) {
+				reject(new Error('Arugment "symbol" is invalid.'));
+			} else {
+				resolve(subscriptions.get(symbol.toUpperCase()));
 			}
 		});
 	}
