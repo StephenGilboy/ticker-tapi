@@ -9,7 +9,7 @@
     "local-test": "mocha ./test/**/*.test.js"
   },
   "engines": {
-    "node": "6.11.1"
+    "node": "6.11.3"
   },
   "dependencies": {
     "bluebird": "^3.4.6",
